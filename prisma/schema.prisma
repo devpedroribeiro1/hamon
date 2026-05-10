@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  active    Boolean  @default(true)
+  cards     Card[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("projects")
+}
+
+model Card {
+  id             String    @id @default(cuid())
+  title          String
+  why            String?
+  block          String    @default("inbox") // inbox | active | archive | deleted
+  position       Int       @default(0)
+  projectId      String?   @map("project_id")
+  project        Project?  @relation(fields: [projectId], references: [id])
+  // Substituição
+  replacedById   String?   @map("replaced_by_id")  // ID do card que substituiu este
+  replacesId     String?   @map("replaces_id")      // ID do card que este substitui
+  countdownStart DateTime? @map("countdown_start")  // quando a contagem inicia
+  countdownEnd   DateTime? @map("countdown_end")    // quando a contagem termina
+  previousBlock  String?   @map("previous_block")   // bloco anterior (para restaurar)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  stateHistory   StateHistory[]
+
+  @@map("cards")
+}
+
+model StateHistory {
+  id        String   @id @default(cuid())
+  cardId    String   @map("card_id")
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  fromBlock String   @map("from_block")
+  toBlock   String   @map("to_block")
+  date      DateTime @default(now())
+
+  @@map("state_history")
+}
